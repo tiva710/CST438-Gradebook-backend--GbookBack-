@@ -1,0 +1,9 @@
+package com.cst438.controllers;
+
+import org.springframework.web.bind.annotation.CrossOrigin;
+
+@CrossOrigin
+public class RestController {
+	
+
+}
