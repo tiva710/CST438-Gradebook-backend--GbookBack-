@@ -50,5 +50,57 @@ public class AssignmentController {
 		return result;
 	}
 	
-	// TODO create CRUD methods for Assignment
+	//Create (POST)
+	@PostMapping("/assignment")
+	public Assignment createAssignment(@RequestBody AssignmentDTO assignmentDTO) {
+		//Check courses instructor against the instructor calling
+		Assignment assignment = new Assignment();
+		Optional<Course> courses = courseRepository.findById(assignmentDTO.getCourseId());				 
+		Course course = courses.get();
+		//add an if not found error message
+		
+		assignment.setCourse(course);
+		assignment.setName(assignmentDTO.getAssignmentName());
+		assignment.setDueDate(Date.valueOf(assignmentDTO.getAssignmentDueDate()));
+		 
+		
+		return assignmentRepository.save(assignment);
+	}
+	
+	
+	//Retrieve by id(GET)
+	@GetMapping("/assignment/{id}")
+	public Assignment getAssignmentById(int id) {
+		//CONFIRM IT IS AN INSTRUCTOR GETTING THE ASSIGNMENT
+		return assignmentRepository.findById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found"));
+	}
+	
+	//Update (PUT)
+	@PutMapping("/assignement/{id}")
+	public Assignment updateAssignment(int id, @RequestBody AssignmentDTO assignmentDTO) {
+		Assignment existingAssignment = assignmentRepository.findById(id)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"Assignment not found"));
+		
+		existingAssignment.setName(assignmentDTO.getAssignmentName());
+		existingAssignment.setDueDate(Date.valueOf(assignmentDTO.getAssignmentDueDate()));
+		Optional<Course> courses = courseRepository.findById(assignmentDTO.getCourseId());
+		Course course = courses.get();
+		
+		existingAssignment.setCourse(course);
+		
+		return assignmentRepository.save(existingAssignment);
+		
+	}
+	
+	//Delete (DELETE)
+	@DeleteMapping("/assignment/{id}")
+	public void deleteAssignment(int id){
+		//CONFIRM IT IS AN INSTRUCTOR DELETING THE ASSIGNMENT
+		Assignment existingAssignment = assignmentRepository.findById(id)
+	            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found"));
+
+		assignmentRepository.delete(existingAssignment);
+		
+	}
 }
