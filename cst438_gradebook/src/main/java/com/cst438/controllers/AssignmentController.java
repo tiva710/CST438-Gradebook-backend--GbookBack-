@@ -1,6 +1,8 @@
 package com.cst438.controllers;
 
+import java.sql.Date;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -61,7 +63,7 @@ public class AssignmentController {
 		
 		assignment.setCourse(course);
 		assignment.setName(assignmentDTO.getAssignmentName());
-		assignment.setDueDate(Date.valueOf(assignmentDTO.getAssignmentDueDate()));
+		assignment.setDueDate(Date.valueOf(assignmentDTO.dueDate()));
 		 
 		
 		return assignmentRepository.save(assignment);
@@ -70,8 +72,8 @@ public class AssignmentController {
 	
 	//Retrieve by id(GET)
 	@GetMapping("/assignment/{id}")
-	public Assignment getAssignmentById(int id) {
-		//CONFIRM IT IS AN INSTRUCTOR GETTING THE ASSIGNMENT
+	public Assignment getAssignmentById(@PathVariable("id") int id) {
+		//CONFIRM IT IS AN INSTRUCTOR GETTIG THE ASSIGNMENT
 		return assignmentRepository.findById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found"));
 	}
@@ -83,7 +85,7 @@ public class AssignmentController {
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"Assignment not found"));
 		
 		existingAssignment.setName(assignmentDTO.getAssignmentName());
-		existingAssignment.setDueDate(Date.valueOf(assignmentDTO.getAssignmentDueDate()));
+		existingAssignment.setDueDate(Date.valueOf(assignmentDTO.dueDate()));
 		Optional<Course> courses = courseRepository.findById(assignmentDTO.getCourseId());
 		Course course = courses.get();
 		
@@ -95,12 +97,16 @@ public class AssignmentController {
 	
 	//Delete (DELETE)
 	@DeleteMapping("/assignment/{id}")
-	public void deleteAssignment(int id){
+	public void deleteAssignment(@PathVariable("id") int id){
 		//CONFIRM IT IS AN INSTRUCTOR DELETING THE ASSIGNMENT
 		Assignment existingAssignment = assignmentRepository.findById(id)
 	            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found"));
 
+		//console log existingAssignment? Or return existing assignment?
 		assignmentRepository.delete(existingAssignment);
 		
 	}
+	
+	
+	
 }
