@@ -21,5 +21,8 @@ public record AssignmentDTO(int id, String assignmentName, String dueDate, Strin
 	public int getCourseId() {
 		return courseId;
 	}
+	public int getId(){
+		return id; 
+	}
 }
 
