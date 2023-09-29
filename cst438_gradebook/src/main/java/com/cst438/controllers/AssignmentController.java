@@ -1,6 +1,5 @@
 package com.cst438.controllers;
 
-import java.sql.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -52,61 +52,68 @@ public class AssignmentController {
 		return result;
 	}
 	
-	//Create (POST)
-	@PostMapping("/assignment")
-	public Assignment createAssignment(@RequestBody AssignmentDTO assignmentDTO) {
-		//Check courses instructor against the instructor calling
-		Assignment assignment = new Assignment();
-		Optional<Course> courses = courseRepository.findById(assignmentDTO.getCourseId());				 
-		Course course = courses.get();
-		//add an if not found error message
-		
-		assignment.setCourse(course);
-		assignment.setName(assignmentDTO.getAssignmentName());
-		assignment.setDueDate(Date.valueOf(assignmentDTO.dueDate()));
-		 
-		
-		return assignmentRepository.save(assignment);
-	}
-	
-	
-	//Retrieve by id(GET)
 	@GetMapping("/assignment/{id}")
-	public Assignment getAssignmentById(@PathVariable("id") int id) {
-		//CONFIRM IT IS AN INSTRUCTOR GETTIG THE ASSIGNMENT
-		return assignmentRepository.findById(id)
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found"));
-	}
-	
-	//Update (PUT)
-	@PutMapping("/assignement/{id}")
-	public Assignment updateAssignment(int id, @RequestBody AssignmentDTO assignmentDTO) {
-		Assignment existingAssignment = assignmentRepository.findById(id)
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"Assignment not found"));
-		
-		existingAssignment.setName(assignmentDTO.getAssignmentName());
-		existingAssignment.setDueDate(Date.valueOf(assignmentDTO.dueDate()));
-		Optional<Course> courses = courseRepository.findById(assignmentDTO.getCourseId());
-		Course course = courses.get();
-		
-		existingAssignment.setCourse(course);
-		
-		return assignmentRepository.save(existingAssignment);
-		
-	}
-	
-	//Delete (DELETE)
-	@DeleteMapping("/assignment/{id}")
-	public void deleteAssignment(@PathVariable("id") int id){
-		//CONFIRM IT IS AN INSTRUCTOR DELETING THE ASSIGNMENT
-		Assignment existingAssignment = assignmentRepository.findById(id)
-	            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found"));
+	public AssignmentDTO getAssignment(@PathVariable("id") int id)  {
+		String instructorEmail = "dwisneski@csumb.edu";  // user name (should be instructor's email)
+		Assignment a = assignmentRepository.findById(id).orElse(null);
+		if (a==null) {
+			throw  new ResponseStatusException( HttpStatus.NOT_FOUND, "assignment not found "+id);
+		}
+		// check that assignment is for a course of this instructor
+		if (! a.getCourse().getInstructor().equals(instructorEmail)) {
+			throw  new ResponseStatusException( HttpStatus.FORBIDDEN, "not authorized "+id);
+		}
+		AssignmentDTO adto = new AssignmentDTO(a.getId(), a.getName(), a.getDueDate().toString(), a.getCourse().getTitle(), a.getCourse().getCourse_id());
+		return adto;
 
-		//console log existingAssignment? Or return existing assignment?
-		assignmentRepository.delete(existingAssignment);
-		
 	}
 	
+	@PostMapping("/assignment")
+	public int createAssignment(@RequestBody AssignmentDTO adto) {
+		// check that course exists and belongs to this instructor
+		String instructorEmail = "dwisneski@csumb.edu";  // user name (should be instructor's email)
+		Course c = courseRepository.findById(adto.courseId()).orElse(null);
+		if (c==null || ! c.getInstructor().equals(instructorEmail)) {
+			throw  new ResponseStatusException( HttpStatus.BAD_REQUEST, "course id not found or not authorized "+adto.courseId());
+		}
+		// create and save assignment.  Return generated id to client.
+		Assignment a = new Assignment();
+		a.setCourse(c);
+		a.setDueDate( java.sql.Date.valueOf(adto.dueDate()));
+		a.setName(adto.assignmentName());
+		assignmentRepository.save(a);
+		return a.getId();
+	}
 	
+	@PutMapping("/assignment/{id}")
+	public void updateAssignment(@PathVariable("id") int id, @RequestBody AssignmentDTO adto) {
+		// check assignment belongs to a course for this instructor
+	    String instructorEmail = "dwisneski@csumb.edu";  // user name (should be instructor's email)
+	    Assignment a = assignmentRepository.findById(id).orElse(null);
+	    if (a==null || ! a.getCourse().getInstructor().equals(instructorEmail)) {
+	    	throw  new ResponseStatusException( HttpStatus.NOT_FOUND, "assignment not found or not authorized "+id);
+	    }
+	    a.setDueDate( java.sql.Date.valueOf(adto.dueDate()));
+	    a.setName(adto.assignmentName());
+	    assignmentRepository.save(a);
+	}
 	
+	@DeleteMapping("/assignment/{id}")
+	public void deleteAssignment(@PathVariable("id") int id, @RequestParam("force") Optional<String> force) {
+		// check assignment belongs to a course for this instructor
+	    String instructorEmail = "dwisneski@csumb.edu";  // user name (should be instructor's email)
+	    Assignment a = assignmentRepository.findById(id).orElse(null);
+	    if (a==null) {
+	    	return;
+	    }
+	    if (! a.getCourse().getInstructor().equals(instructorEmail)) {
+	    	throw  new ResponseStatusException( HttpStatus.FORBIDDEN, "not authorized "+id);
+	    }
+	    // does assignment have grades?  if yes, don't delete unless force is specified 
+	    if (a.getAssignmentGrades().size()==0 || force.isPresent()) {
+	    	assignmentRepository.deleteById(id);
+	    } else {
+	    	throw  new ResponseStatusException( HttpStatus.BAD_REQUEST, "assignment has grades ");
+	    }
+	}
 }
