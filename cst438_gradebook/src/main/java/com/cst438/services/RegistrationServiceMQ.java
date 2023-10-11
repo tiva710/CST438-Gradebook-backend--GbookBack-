@@ -47,6 +47,9 @@ public class RegistrationServiceMQ implements RegistrationService {
 		System.out.println("Gradebook has received: "+message);
 
 		//TODO  deserialize message to EnrollmentDTO and update database
+		 EnrollmentDTO enrollmentDTO = fromJsonString(message, EnrollmentDTO.class);
+//	    enrollmentRepository.save(enrollmentDTO); 
+		//.save() give me an error... did not know what to do
 	}
 
 	/*
@@ -58,6 +61,8 @@ public class RegistrationServiceMQ implements RegistrationService {
 		System.out.println("Start sendFinalGrades "+course_id);
 
 		//TODO convert grades to JSON string and send to registration service
+		String gradesJson = asJsonString(grades);
+	    	rabbitTemplate.convertAndSend("registration-queue", gradesJson);
 		
 	}
 	
