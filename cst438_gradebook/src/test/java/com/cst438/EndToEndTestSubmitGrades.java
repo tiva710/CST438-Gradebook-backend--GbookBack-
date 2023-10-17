@@ -37,6 +37,107 @@ public class EndToEndTestSubmitGrades {
 	public static final String TEST_ASSIGNMENT_NAME = "db design";
 	public static final String NEW_GRADE = "99";
 
+	@Test
+	public void addAssignmentTest() throws Exception{
+		System.setProperty("webdriver.chrome.driver", CHROME_DRIVER_FILE_LOCATION);
+		WebDriver driver = new ChromeDriver();
+		
+		driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+
+		driver.get(URL + "/assignment");
+		Thread.sleep(SLEEP_DURATION);
+		
+		try {
+			WebElement assignmentNameInput = driver.findElement(By.id("assignmentName"));
+            WebElement dueDateInput = driver.findElement(By.id("dueDate"));
+            WebElement submitButton = driver.findElement(By.id("submitButton"));
+            
+            assignmentNameInput.sendKeys(TEST_ASSIGNMENT_NAME);
+            dueDateInput.sendKeys("2023-10-20");
+            
+            submitButton.click();
+            Thread.sleep(SLEEP_DURATION);
+            
+            WebElement successMessage = driver.findElement(By.id("successMessage"));
+            assertThat(successMessage.getText()).isEqualTo("Assignment created successfully");
+			
+		}catch (Exception ex) {
+			throw ex;
+		} finally {
+
+			driver.quit();
+		}
+		
+		
+	}
+	
+	@Test
+	public void updateAssignmentTest() throws Exception{
+		System.setProperty("webdriver.chrome.driver", CHROME_DRIVER_FILE_LOCATION);
+		WebDriver driver = new ChromeDriver();
+	
+		driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+	
+	
+		driver.get(URL + "/assignment/888");
+		Thread.sleep(SLEEP_DURATION);
+		
+		
+		try {
+			
+			WebElement assignmentNameInput = driver.findElement(By.id("assignmentName"));
+	        WebElement dueDateInput = driver.findElement(By.id("dueDate"));
+	        WebElement updateButton = driver.findElement(By.id("updateButton"));
+	        
+	        assignmentNameInput.clear();
+	        assignmentNameInput.sendKeys("Updated Assignment Name");
+	        dueDateInput.clear();
+	        dueDateInput.sendKeys("2023-10-20");
+	        
+	        updateButton.click();
+	        Thread.sleep(SLEEP_DURATION);
+	        
+	        WebElement successMessage = driver.findElement(By.id("successMessage"));
+	        assertThat(successMessage.getText()).isEqualTo("Assignment updated successfully");
+
+			
+		}catch (Exception ex) {
+			throw ex;
+		} finally {
+
+			driver.quit();
+		}
+	}
+	
+	@Test
+	public void deleteAssignmentTest() throws Exception{
+		System.setProperty("webdriver.chrome.driver", CHROME_DRIVER_FILE_LOCATION);
+		WebDriver driver = new ChromeDriver();
+		
+		driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+	
+		//get id? 
+		driver.get(URL + "/assignment/888");
+		Thread.sleep(SLEEP_DURATION);
+		
+		try {
+			
+			WebElement deleteButton = driver.findElement(By.id("deleteButton"));
+	        deleteButton.click();
+	        Thread.sleep(SLEEP_DURATION);
+
+	        WebElement successMessage = driver.findElement(By.id("successMessage"));
+	        assertThat(successMessage.getText()).isEqualTo("Assignment deleted successfully");
+
+			
+		}catch (Exception ex) {
+			throw ex;
+		} finally {
+
+			driver.quit();
+		}
+	}
+
 
 	@Test
 	public void addCourseTest() throws Exception {
