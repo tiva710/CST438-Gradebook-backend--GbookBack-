@@ -50,7 +50,7 @@ public class EndToEndTestSubmitGrades {
 		try {
 			WebElement assignmentNameInput = driver.findElement(By.id("assignmentName"));
             WebElement dueDateInput = driver.findElement(By.id("dueDate"));
-            WebElement submitButton = driver.findElement(By.id("submitButton"));
+            WebElement submitButton = driver.findElement(By.id("add"));
             
             assignmentNameInput.sendKeys(TEST_ASSIGNMENT_NAME);
             dueDateInput.sendKeys("2023-10-20");
@@ -58,8 +58,8 @@ public class EndToEndTestSubmitGrades {
             submitButton.click();
             Thread.sleep(SLEEP_DURATION);
             
-            WebElement successMessage = driver.findElement(By.id("successMessage"));
-            assertThat(successMessage.getText()).isEqualTo("Assignment created successfully");
+            WebElement successMessage = driver.findElement(message));
+            assertThat(successMessage.getText()).isEqualTo("Assignment Saved");
 			
 		}catch (Exception ex) {
 			throw ex;
@@ -97,8 +97,8 @@ public class EndToEndTestSubmitGrades {
 	        updateButton.click();
 	        Thread.sleep(SLEEP_DURATION);
 	        
-	        WebElement successMessage = driver.findElement(By.id("successMessage"));
-	        assertThat(successMessage.getText()).isEqualTo("Assignment updated successfully");
+	        WebElement successMessage = driver.findElement(message);
+	        assertThat(successMessage.getText()).isEqualTo("Assignment Updated Succesfully");
 
 			
 		}catch (Exception ex) {
@@ -126,8 +126,8 @@ public class EndToEndTestSubmitGrades {
 	        deleteButton.click();
 	        Thread.sleep(SLEEP_DURATION);
 
-	        WebElement successMessage = driver.findElement(By.id("successMessage"));
-	        assertThat(successMessage.getText()).isEqualTo("Assignment deleted successfully");
+	        WebElement successMessage = driver.findElement(message);
+	        assertThat(successMessage.getText()).isEqualTo("Assignment deleted.");
 
 			
 		}catch (Exception ex) {
