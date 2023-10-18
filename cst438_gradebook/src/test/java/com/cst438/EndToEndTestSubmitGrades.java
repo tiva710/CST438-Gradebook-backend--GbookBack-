@@ -78,8 +78,8 @@ public class EndToEndTestSubmitGrades {
 	
 		driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 	
-	
-		driver.get(URL + "/assignment/888");
+		//get id? 
+		driver.get(URL + "/assignment/{id}");
 		Thread.sleep(SLEEP_DURATION);
 		
 		
@@ -117,7 +117,7 @@ public class EndToEndTestSubmitGrades {
 		driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 	
 		//get id? 
-		driver.get(URL + "/assignment/888");
+		driver.get(URL + "/assignment/{id}");
 		Thread.sleep(SLEEP_DURATION);
 		
 		try {
