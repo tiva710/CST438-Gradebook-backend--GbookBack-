@@ -37,32 +37,43 @@ public class RegistrationServiceMQ implements RegistrationService {
 
 	Queue registrationQueue = new Queue("registration-queue", true);
 
+	@Bean
+	Queue createQueue() {
+		return new Queue("gradebook-queue");
+	}
 	/*
 	 * Receive message for student added to course
 	 */
 	@RabbitListener(queues = "gradebook-queue")
 	@Transactional
 	public void receive(String message) {
-		
 		System.out.println("Gradebook has received: "+message);
-
-		//TODO  deserialize message to EnrollmentDTO and update database
-		 EnrollmentDTO enrollmentDTO = fromJsonString(message, EnrollmentDTO.class);
-//	    enrollmentRepository.save(enrollmentDTO); 
-		//.save() give me an error... did not know what to do
+		EnrollmentDTO dto = fromJsonString(message, EnrollmentDTO.class);
+		System.out.println(dto.toString());
+		
+		Course course = courseRepository.findById(dto.courseId()).orElse(null);
+		if (course==null) {
+			System.out.println("Error. Student add to course. course not found "+dto.toString());
+		} else {
+			Enrollment enrollment = new Enrollment();
+			enrollment.setCourse(course);
+			enrollment.setStudentEmail(dto.studentEmail());
+			enrollment.setStudentName(dto.studentName());
+			enrollmentRepository.save(enrollment);
+			System.out.println("End receive enrollment.");
+		}		
 	}
 
 	/*
 	 * Send final grades to Registration Service 
 	 */
 	@Override
-	public void sendFinalGrades(int course_id, FinalGradeDTO[] grades) {
-		 
+	public void sendFinalGrades(int course_id, FinalGradeDTO[] grades) { 
 		System.out.println("Start sendFinalGrades "+course_id);
-
-		//TODO convert grades to JSON string and send to registration service
-		String gradesJson = asJsonString(grades);
-	    	rabbitTemplate.convertAndSend("registration-queue", gradesJson);
+		String message = asJsonString(grades);
+		System.out.println(message);
+		rabbitTemplate.convertAndSend(registrationQueue.getName(), message);
+		System.out.println("End sendFinalGrades ");
 		
 	}
 	
