@@ -25,6 +25,8 @@ import com.cst438.domain.Enrollment;
 import com.cst438.domain.GradeDTO;
 import com.cst438.domain.FinalGradeDTO;
 import com.cst438.services.RegistrationService;
+import java.security.Principal;
+import com.cst438.domain.UserRepository;
 
 @RestController
 @CrossOrigin 
@@ -38,9 +40,13 @@ public class GradeBookController {
 	
 	@Autowired
 	CourseRepository courseRepository;
+
+	@Autowired
+	UserRepository UserRepository;
 	
 	@Autowired
 	RegistrationService registrationService;
+
 	
 	/*
 	 * get current grades of students for an assignment
@@ -48,25 +54,29 @@ public class GradeBookController {
 	 * id - assignment id
 	 */
 	@GetMapping("/gradebook/{id}")
-	public GradeDTO[] getGradebook(@PathVariable("id") Integer assignmentId  ) {
-		String email = "dwisneski@csumb.edu";  // user name (should be instructor's email) 
-		Assignment assignment = checkAssignment(assignmentId, email);
-		// get the enrollments for the course
-		// for each enrollment, get the current grade for assignment, 
-		// if the student does not have a current grade, create an empty grade
-		List<Enrollment> students = assignment.getCourse().getEnrollments();
-		GradeDTO[] grades = new GradeDTO[students.size()];
-		int idx=0;
-		for (Enrollment e: students) {
-			// does student have a grade for this assignment
-			AssignmentGrade ag = assignmentGradeRepository.findByAssignmentIdAndStudentEmail(assignmentId,  e.getStudentEmail());
-			if (ag == null) {
-				ag = new AssignmentGrade(assignment, e);
-				assignmentGradeRepository.save(ag);
+	public GradeDTO[] getGradebook(@PathVariable("id") Integer assignmentId, Principal principal) {
+		if(principal != null) {
+			String email = principal.getName();  // user name (should be instructor's email) 
+			Assignment assignment = checkAssignment(assignmentId, email);
+			// get the enrollments for the course
+			// for each enrollment, get the current grade for assignment, 
+			// if the student does not have a current grade, create an empty grade
+			List<Enrollment> students = assignment.getCourse().getEnrollments();
+			GradeDTO[] grades = new GradeDTO[students.size()];
+			int idx=0;
+			for (Enrollment e: students) {
+				// does student have a grade for this assignment
+				AssignmentGrade ag = assignmentGradeRepository.findByAssignmentIdAndStudentEmail(assignmentId,  e.getStudentEmail());
+				if (ag == null) {
+					ag = new AssignmentGrade(assignment, e);
+					assignmentGradeRepository.save(ag);
+				}
+				grades[idx++] = new GradeDTO(ag.getId(), e.getStudentName(), e.getStudentEmail(), ag.getScore());
 			}
-			grades[idx++] = new GradeDTO(ag.getId(), e.getStudentName(), e.getStudentEmail(), ag.getScore());
+			return grades;
+		}else {
+			return null; 
 		}
-		return grades;
 	}
 	
 	/* 
@@ -75,31 +85,34 @@ public class GradeBookController {
 	 */
 	@PostMapping("/course/{course_id}/finalgrades")
 	@Transactional
-	public void calcFinalGrades(@PathVariable int course_id) {
+	public void calcFinalGrades(@PathVariable int course_id, Principal principal) {
 		System.out.println("Gradebook - calcFinalGrades for course " + course_id);
 		// check that this request is from the course instructor 
-		String email = "dwisneski@csumb.edu";  // user name (should be instructor's email) 
-		Course c = courseRepository.findById(course_id).orElse(null);
-		if (!c.getInstructor().equals(email)) {
-			throw new ResponseStatusException( HttpStatus.UNAUTHORIZED, "Not Authorized. " );
-		}
-		// for each student in the course, calculate average of all assignment grades
-		// and convert to a letter grade
-		ArrayList<FinalGradeDTO> grades = new ArrayList<>();
-		for (Enrollment e: c.getEnrollments()) {
-			double total=0.0;
-			int count = 0;
-			for (AssignmentGrade ag : e.getAssignmentGrades()) {
-				if (ag.getScore()!=null) {
-					total = total+ag.getScore();
-					count++;
-				}
+		if(principal != null) {
+			String email = principal.getName();  // user name (should be instructor's email) 
+			Course c = courseRepository.findById(course_id).orElse(null);
+			if (!c.getInstructor().equals(email)) {
+				throw new ResponseStatusException( HttpStatus.UNAUTHORIZED, "Not Authorized. " );
 			}
-			double average = (count > 0) ? average = total/count : 0; 
-			FinalGradeDTO dto = new FinalGradeDTO(e.getStudentEmail(), e.getStudentName(), letterGrade(average), course_id);
-			grades.add(dto);
+			// for each student in the course, calculate average of all assignment grades
+			// and convert to a letter grade
+			ArrayList<FinalGradeDTO> grades = new ArrayList<>();
+			for (Enrollment e: c.getEnrollments()) {
+				double total=0.0;
+				int count = 0;
+				for (AssignmentGrade ag : e.getAssignmentGrades()) {
+					if (ag.getScore()!=null) {
+						total = total+ag.getScore();
+						count++;
+					}
+				}
+				double average = (count > 0) ? average = total/count : 0; 
+				FinalGradeDTO dto = new FinalGradeDTO(e.getStudentEmail(), e.getStudentName(), letterGrade(average), course_id);
+				grades.add(dto);
+			}
+			registrationService.sendFinalGrades(course_id, grades.toArray(new FinalGradeDTO[grades.size()]));
 		}
-		registrationService.sendFinalGrades(course_id, grades.toArray(new FinalGradeDTO[grades.size()]));
+		
 	}
 
 	/*
@@ -108,20 +121,23 @@ public class GradeBookController {
 	 */
 	@PutMapping("/gradebook/{id}")
 	@Transactional
-	public void updateGradebook (@RequestBody GradeDTO[] grades, @PathVariable("id") Integer assignmentId ) {
-		String email = "dwisneski@csumb.edu";  // user name (should be instructor's email) 
-		checkAssignment(assignmentId, email);  // check that user name matches instructor email of the course.
-		// for each grade, update the assignment grade in database 		
-		for (GradeDTO g : grades) {
-			System.out.printf("%s\n", g.toString());
-			AssignmentGrade ag = assignmentGradeRepository.findById(g.assignmentGradeId()).orElse(null);
-			if (ag == null) {
-				throw new ResponseStatusException( HttpStatus.BAD_REQUEST, "Invalid grade primary key. "+g.assignmentGradeId());
+	public void updateGradebook (@RequestBody GradeDTO[] grades, @PathVariable("id") Integer assignmentId, Principal principal ) {
+		if(principal!= null) {
+			String email = principal.getName();  // user name (should be instructor's email) 
+			checkAssignment(assignmentId, email);  // check that user name matches instructor email of the course.
+			// for each grade, update the assignment grade in database 		
+			for (GradeDTO g : grades) {
+				System.out.printf("%s\n", g.toString());
+				AssignmentGrade ag = assignmentGradeRepository.findById(g.assignmentGradeId()).orElse(null);
+				if (ag == null) {
+					throw new ResponseStatusException( HttpStatus.BAD_REQUEST, "Invalid grade primary key. "+g.assignmentGradeId());
+				}
+				ag.setScore(g.grade());
+				System.out.printf("%s\n", ag.toString());
+				assignmentGradeRepository.save(ag);
 			}
-			ag.setScore(g.grade());
-			System.out.printf("%s\n", ag.toString());
-			assignmentGradeRepository.save(ag);
 		}
+		
 	}
 
 	

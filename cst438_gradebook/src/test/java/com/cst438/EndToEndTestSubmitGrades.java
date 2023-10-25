@@ -37,6 +37,8 @@ public class EndToEndTestSubmitGrades {
 	public static final String TEST_ASSIGNMENT_NAME = "db design";
 	public static final String NEW_GRADE = "99";
 
+
+	//Code to test adding an assignment 
 	@Test
 	public void addAssignmentTest() throws Exception{
 		System.setProperty("webdriver.chrome.driver", CHROME_DRIVER_FILE_LOCATION);
@@ -70,7 +72,9 @@ public class EndToEndTestSubmitGrades {
 		
 		
 	}
+
 	
+	//Code to test updating an assignment 
 	@Test
 	public void updateAssignmentTest() throws Exception{
 		System.setProperty("webdriver.chrome.driver", CHROME_DRIVER_FILE_LOCATION);
@@ -108,7 +112,9 @@ public class EndToEndTestSubmitGrades {
 			driver.quit();
 		}
 	}
-	
+
+
+	//code to test deleting an assignment
 	@Test
 	public void deleteAssignmentTest() throws Exception{
 		System.setProperty("webdriver.chrome.driver", CHROME_DRIVER_FILE_LOCATION);
